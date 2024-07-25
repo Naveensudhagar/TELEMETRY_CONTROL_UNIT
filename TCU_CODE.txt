@@ -1,0 +1,71 @@
+#define BLYNK_TEMPLATE_ID "TMPL3iujzYHps"
+#define BLYNK_TEMPLATE_NAME "TCU"
+#define BLYNK_AUTH_TOKEN "VUc35Xu8CroGMySJYerThLpo_XOtIqSu"
+
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+#define Sensor A0
+#define encoder D4
+
+float vOUT = 0.0;
+float vIN = 0.0;
+float R1 = 30000.0;
+float R2 = 7500.0;
+
+volatile unsigned int counter;
+int rpm;
+int m_per_s;
+int km_per_hour;
+
+char auth[] = BLYNK_AUTH_TOKEN;
+char ssid[] = "TIC FIBER";//
+char pass[] = "Praveen00p";//
+
+void ICACHE_RAM_ATTR ISRoutine ();
+
+void setup() {
+  
+Serial.begin(115200);
+pinMode(encoder, INPUT);
+attachInterrupt(digitalPinToInterrupt(encoder),ISRoutine,RISING);
+Blynk.begin(auth, ssid, pass);
+delay(10);
+}
+
+void ISRoutine(){
+        counter++;
+}
+
+void loop() {
+  
+Blynk.run();
+
+  int value = analogRead(Sensor);
+  vOUT = (value * 5.0) / 1024.0;
+  vIN = vOUT / (R2 / (R1 + R2));
+  Serial.print("Voltage : ");
+  Serial.println(vIN);
+
+static uint32_t previousMillis;
+  if (millis() - previousMillis >= 1000) {
+            rpm = (counter/20)*60; 
+            counter = 0;     
+            previousMillis += 1000;
+            m_per_s = rpm*0.0848;
+            km_per_hour = m_per_s*3.6;
+            delay(1); 
+  }
+ // Serial.print("Voltage : ");
+ // Serial.println(vIN);
+  Serial.print("Speed: ");
+  Serial.println(km_per_hour);
+  Serial.println(" km/hr");
+  Serial.print("rpm:");
+  Serial.println(rpm);
+  
+  Blynk.virtualWrite(V0, vIN); 
+  Blynk.virtualWrite(V1, km_per_hour); 
+  delay(1000);
+}
